@@ -16,7 +16,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
     val_losses = []
     
     for epoch in range(num_epochs):
-        # 训练阶段
         model.train()
         train_loss = 0.0
         train_bar = tqdm(train_loader, desc=f'Epoch {epoch+1}/{num_epochs} [Train]')
@@ -24,15 +23,9 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         for images, masks in train_bar:
             images = images.to(device)
             masks = masks.to(device)
-            
-            # 清零梯度
             optimizer.zero_grad()
-            
-            # 前向传播
             outputs = model(images)
             loss = criterion(outputs, masks)
-            
-            # 反向传播
             loss.backward()
             optimizer.step()
             
@@ -42,7 +35,6 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         train_loss /= len(train_loader)
         train_losses.append(train_loss)
         
-        # 验证阶段
         model.eval()
         val_loss = 0.0
         val_bar = tqdm(val_loader, desc=f'Epoch {epoch+1}/{num_epochs} [Val]')
@@ -62,14 +54,11 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
         val_losses.append(val_loss)
         
         print(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}')
-        
-        # 保存最佳模型
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             torch.save(model.state_dict(), 'best_model.pth')
             print(f'保存最佳模型，验证损失: {best_val_loss:.4f}')
     
-    # 绘制损失曲线
     plt.figure(figsize=(10, 5))
     plt.plot(train_losses, label='Train Loss')
     plt.plot(val_losses, label='Val Loss')
@@ -83,22 +72,16 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, num_epoch
     return model
 
 def main():
-    # 设置设备
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    # 准备数据集
     dataset_dir = '../data/raw'
     processed_dir = '../data/processed'
     
     image_paths, mask_paths = prepare_dataset(dataset_dir, processed_dir)
     train_loader, val_loader = create_dataloaders(image_paths, mask_paths, batch_size=8)
-    
-    # 初始化模型、损失函数和优化器
     model = UNet(n_channels=3, n_classes=4)
     criterion = CombinedLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    
-    # 训练模型
+
     model = train_model(
         model=model,
         train_loader=train_loader,
